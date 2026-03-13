@@ -1,4 +1,5 @@
-WITH cancelled_orders AS (
+WITH --отмененные заказы
+        cancelled_orders AS (
         SELECT date_trunc('month', "createdDateTime"::date)::date AS created_month,
                 id AS order_id
         FROM grp_ods_es00_orhst.order_snp
@@ -6,6 +7,7 @@ WITH cancelled_orders AS (
                 AND "createdDateTime"::date >= '2025-10-01'
                 AND "createdDateTime"::date < '2026-02-01'
 ),
+        --типы отмененных заказов
 cancell_type AS ( 
         SELECT c.created_month,
                 c.order_id,
@@ -19,6 +21,7 @@ cancell_type AS (
         LEFT JOIN grp_ods_orhst.order_reject_reason_snp orr ON c.order_id::text=orr.order_id::text
         LEFT JOIN grp_ods_es00_operc.canceled_order_snp caos ON c.order_id = caos."orderId"
 ),
+        --заказы с опозданиями
 late_orders AS (
         SELECT order_id,
                 date_trunc('month', created_dttm::date)::date AS order_month,
@@ -27,12 +30,14 @@ late_orders AS (
         FROM grp_em.fct_order
         WHERE created_dttm::date >= '2025-10-01'
 ),
+        --опоздания в минутах
 late_agg AS (
         SELECT order_id,
                 order_month,
                 EXTRACT(epoch FROM (delivered_dttm - planned_delivery))/60 AS late_min
         FROM late_orders         
 ),
+        --группировка по времени опоздания
 late_minutes AS (
         SELECT count(order_id) AS orders_count,
                 CASE 
@@ -57,6 +62,7 @@ late_base AS (
         GROUP BY 1
         ORDER BY 1
 ),
+        --отмененные заказы по ЦФЗ
 cancell_base AS (
         SELECT created_month,        
                 count(DISTINCT(order_id)) AS cfz_cancelled_orders
