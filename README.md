@@ -1,1 +1,1 @@
-# give-compensation-fo-late-analysis
+# give-compensation-for-late-analysis
